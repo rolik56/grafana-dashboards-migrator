@@ -1,0 +1,41 @@
+version: "3.9"
+
+# Target Grafana (порт 3002) + Prometheus (порт 9092)
+# Запуск: docker compose -f docker-compose-target.yml up -d
+
+services:
+  prometheus-target:
+    image: prom/prometheus:v2.51.0
+    container_name: prometheus-target
+    ports:
+      - "9092:9090"
+    volumes:
+      - ./provisioning/target/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    restart: unless-stopped
+
+  grafana-target:
+    image: grafana/grafana:10.4.2
+    container_name: grafana-target
+    ports:
+      - "3002:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./provisioning/target/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+      - ./provisioning/target/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
+      - ./provisioning/target/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus-target
+      - prometheus-grafana-metrics
+    restart: unless-stopped
+
+  prometheus-grafana-metrics:
+    image: prom/prometheus:v2.51.0
+    container_name: prometheus-grafana-metrics
+    ports:
+      - "9093:9090"
+    volumes:
+      - ./provisioning/target/prometheus-grafana.yml:/etc/prometheus/prometheus.yml:ro
+    restart: unless-stopped

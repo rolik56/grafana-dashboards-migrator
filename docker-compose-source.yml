@@ -1,0 +1,31 @@
+version: "3.9"
+
+# Source Grafana (порт 3000) + Prometheus (порт 9090)
+# Запуск: docker compose -f docker-compose-source.yml up -d
+
+services:
+  prometheus-source:
+    image: prom/prometheus:v2.51.0
+    container_name: prometheus-source
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./provisioning/source/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    restart: unless-stopped
+
+  grafana-source:
+    image: grafana/grafana:10.4.2
+    container_name: grafana-source
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./provisioning/source/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+      - ./provisioning/source/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
+      - ./provisioning/source/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus-source
+    restart: unless-stopped
